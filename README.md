@@ -1,405 +1,601 @@
-# Excel Practicals: Complete Revision README
+# Excel Practical Exam: Revision Guide
 
-Source file: `Book1 (1).xlsx` (19 sheets). This README explains every sheet one by one: what it is for, how it was built step by step, every formula broken down, what result you get, and the traps to avoid.
+> Built from your own workbook (`Book1.xlsx`, 25 sheets). Every section tells you **what you did, how the formula works, where you slipped, and a quick self-test.** I've read your formulas, pivots, charts and dropdowns, and flagged real mistakes I found in the file so you don't repeat them in the exam.
 
-> **Honest note:** the workbook has no written "aim" for any practical. I worked out the aim of each sheet from its data, formulas, pivots and charts. The formulas, ranges and results below are read directly from your file, so they are exact. The "Aim" lines are my best interpretation, so match them to your journal wording.
-
----
-
-## 0. Read this first
-
-### Sheet order and what each one covers
-
-| # | Sheet | Topic |
-|---|-------|-------|
-| 1 | Sheet1 | Student marks: AVERAGE, MAX, MIN, ROUNDUP, IF, RANDBETWEEN |
-| 2 | Sheet2 | Same + AND/OR, nested IF (grades), conditional formatting |
-| 3 | Sheet3 | VLOOKUP, XLOOKUP, drop-down list (data validation) |
-| 4 | Sheet4 | INDEX (timetable grid) |
-| 5 | Sheet5 | UNIQUE + SUMIF |
-| 6 | Sheet6 | UNIQUE + SUMIFS + COUNTIF |
-| 7 | Sheet7 | DSUM, AVERAGEIF, AVERAGEIFS, UNIQUE, drop-downs |
-| 8 | Sheet8 | Loan EMI: PMT, IPMT, PPMT |
-| 9 | Sheet9 | Seat booking: COUNTA, COUNTBLANK, COUNTIF, conditional formatting |
-| 10 | Sheet10 | Pivot table + pivot chart + pie chart |
-| 11 | Sheet11 | Second pivot table (sales by city) |
-| 12 | Sheet12 | Excel Table, OFFSET, two pivot tables |
-| 13 | Sheet13 | SUM / AVERAGE on marks (+ a People Graph add-in picture) |
-| 14 | Sheet14 | SEQUENCE + two Map charts |
-| 15 | Sheet15 | DATEDIF, TODAY, SUMIF (HR data) |
-| 16 | Sheet16 | Splitting joined names (Flash Fill style) |
-| 17 | Sheet18 | Splitting "12ADI" into number + name |
-| 18 | name | Mail-merge data list (name, pending amount, email) |
-| 19 | Sheet17 | Second mail-merge data list |
-
-(Sheet 17 is named `Sheet18` and sheet 19 is named `Sheet17`. The names are swapped, so go by position when someone says "sheet 17".)
-
-### Concepts that appear everywhere
-
-**1. Formulas always start with `=`.**
-
-**2. Cell references**
-- Relative `A1`: changes when you copy or drag the formula.
-- Absolute `$A$1`: never changes (press **F4** to toggle).
-- Mixed `$A1` or `A$1`: locks only the column or only the row.
-- Many of your formulas "drift" when dragged, for example `SUMIF($C$2:C21,...)` becomes `C22`, `C23`... It still works because the extra cells are empty, but the correct way is `$C$2:$C$21`.
-
-**3. `RANDBETWEEN(low, high)`** gives a random whole number. It is *volatile*: it changes every time the sheet recalculates (any edit, or **F9**). So the marks, salaries and sales in your file change every time you open it. The numbers quoted in this README are the values saved in your file. Yours will differ. To freeze them: copy → Paste Special → Values.
-
-**4. Array formulas / dynamic arrays**
-- One formula that fills a whole range. In Excel 365 it "spills" automatically.
-- Old Excel needs **Ctrl+Shift+Enter**, and the formula shows in `{ }`.
-- Examples in your file: `UNIQUE`, `SEQUENCE`, `ROUNDUP(F2:F21,2)`.
-
-**5. Criteria functions** (`SUMIF`, `COUNTIF`, `AVERAGEIF`, and their `...IFS` versions) filter rows by a condition. Text criteria are not case-sensitive. **Hidden spaces break matches** (`"cash "` is not `"cash"`).
-
-**6. Argument order trap**
-- `SUMIF(range, criteria, sum_range)`: the sum range is **last**.
-- `SUMIFS(sum_range, criteria_range1, criteria1, ...)`: the sum range is **first**.
-- Same for `AVERAGEIF` vs `AVERAGEIFS`.
+**Legend:** [365] = Excel 365/2021 only (UNIQUE, XLOOKUP, SEQUENCE, spilling). Check the exam PC has it. [MISTAKE] = a mistake found in your sheet. [EXAM] = likely exam question.
 
 ---
 
-## 1. Sheet1: Student Marks Result
+## 0. Instructor's Golden Rules (read these twice)
 
-**Aim:** Calculate the average, highest, lowest, rounded average, eligibility and pass/fail for 20 students in 3 subjects.
+1. **Press `F4` to lock references.** `C2:C21` → `$C$2:$C$21`. This is the most common mistake in your file (see Sheets 5, 6, 7, 15).
+2. **Know your argument order.** `SUMIF(range, criteria, sum_range)` but `SUMIFS(sum_range, range1, crit1, ...)`. Sum-range moves to the front in the "S" versions.
+3. **`0` or `FALSE` as the last VLOOKUP argument means exact match.** Always use it.
+4. **Always give nested IFs a final "else".** Yours returned `FALSE` (Sheet1).
+5. **`RANDBETWEEN` and `TODAY` are volatile.** They change on every recalculation. Freeze values with Copy → Paste Special → Values (`Ctrl+Alt+V`, then `V`).
+6. **Pivot tables do not auto-update.** Right-click → Refresh (`Alt+F5`).
+7. **Dates typed as `10.10.2026` stay as text.** They won't group or calculate. Use real dates (`10/10/2026`).
+8. **Spelling matters.** `QAULIFY`, `UNQULIFY`, `nevember` and `cicago` all appear in your sheets. Examiners check output text exactly.
 
-**Columns (A1:L1):** rollno | name | phy | chem | math | avg | max | min | round off | age | criteria | result
+---
 
-### Steps
-1. Type the headers in row 1. Enter roll numbers 1 to 20 in A and names in B.
-2. **Marks:** `C2` is typed as `55` (a fixed value). All other marks (C3:C21, D2:E21) use:
-   `=RANDBETWEEN(20,99)` → a random mark from 20 to 99. Fill down / across.
-3. **Average (F):** `=AVERAGE(C2:E2)`. Drag down to row 21.
-4. **Max (G):** `=MAX(C2:E2)`. **Min (H):** `=MIN(C2:E2)`. Drag down.
-5. **Round off (I):** one array formula over `I2:I21`:
-   `=ROUNDUP(F2:F21,2)`
-   - `ROUNDUP(number, digits)` always rounds *away from zero*. Example: 46.3333 becomes **46.34**. (`ROUND` would give 46.33.)
-   - Non-array alternative: `=ROUNDUP(F2,2)` and drag down.
-6. **Age (J):** `=RANDBETWEEN(14,28)`.
-7. **Criteria (K):** one array formula over `K2:K21`:
-   `=IF(J2:J21>18,"qualify","not applicable")`
-   Age above 18 gives "qualify", otherwise "not applicable".
-8. **Result (L):** `=IF(I2>=55,"pass","fail")`
-   Pass mark is **55**, tested on the *rounded average*.
+## 1. Sheet Map
 
-### Formula meanings
+| Sheet | Topic | Key skills |
+|---|---|---|
+| Sheet1 | Student marks | AVERAGE, MAX, MIN, IF, AND, nested IF, conditional formatting |
+| Sheet2 | Ages | UNIQUE [365], FREQUENCY |
+| Sheet3 | Employee lookup | VLOOKUP, XLOOKUP [365], drop-down list |
+| Sheet4 | Timetable | INDEX, drop-down list |
+| Sheet5 | Salary by designation | SUMIF + UNIQUE |
+| Sheet6 | Salary × marital status | SUMIFS (2 conditions), COUNTIF |
+| Sheet7 | Device sales | DSUM, AVERAGEIF, AVERAGEIFS, dependent drop-downs |
+| Sheet8 | Loan | PMT, IPMT, PPMT |
+| Sheet9 | Seat booking | COUNTA, COUNTBLANK, COUNTIF, conditional formatting, colour scales |
+| Sheet10 | Orders | Pivot table, pivot chart, pie chart |
+| Sheet11 | Revenue | Excel Table (`Ctrl+T`), 2 pivots, OFFSET |
+| Sheet12 | City sales | Pivot with 2 row fields |
+| Sheet13 | Marks totals | SUM, AVERAGE, pictures, Insert-tab tour |
+| Sheet14 | Number grid + countries | SEQUENCE [365], filled map chart |
+| Sheet15 | Staff | DATEDIF, TODAY, wildcard SUMIF |
+| Sheet16 | Names | Custom function `AddNameSpaces` (VBA) |
+| Sheet17 | Text split | Custom functions `GETNAME`, `GetNumbers` (VBA) |
+| Sheet18 + 4 city sheets | Customers | AutoFilter, splitting data onto separate sheets |
+| Sheet23 | State/category sales | Raw data for pivot/chart practice |
+| Sheet20 | Pending payments | E-mail hyperlinks |
+| Sheet19 | Empty | (scratch sheet) |
+
+---
+
+## 2. Sheet-by-Sheet Walkthrough
+
+### Sheet1: Student Marks (IF family + Conditional Formatting)
+
+**Layout:** Roll No, Name, PHY, CHE, MATHS, then calculated columns.
+
+| Col | Formula (row 2) | Meaning |
+|---|---|---|
+| C, E | `=RANDBETWEEN(20,99)` | Random whole number from 20 to 99 (dummy marks) |
+| F | `=AVERAGE(C2:E2)` | Mean, formatted to 2 decimals (`0.00`) |
+| G | `=MAX(C2:E2)` | Highest mark |
+| H | `=MIN(C2:E2)` | Lowest mark |
+| I | `=RANDBETWEEN(15,20)` | Random age |
+| J | `=IF(I2>=18,"QUALIFY","UNQUALIFY")` | Simple IF: age 18+ qualifies |
+| K | `=IF(F2>=55,"PASS","FAIL")` | Pass if average is at least 55 |
+| L | `=IF(AND(C2>35,D2>35,E2>35),"pass","fail")` | Pass only if **all** subjects are above 35 |
+| M | `=IF(F2>80,"A",IF(F2>70,"B",IF(F2>60,"C","FAIL")))` | Nested IF grade (corrected version) |
+
+**Conditional formatting you applied** (Home → Conditional Formatting → Highlight Cells Rules):
+- Cells `< 35` → light red fill (fail marks)
+- Cells `> 90` → yellow fill (top marks)
+
+**How IF works:** `IF(test, value_if_true, value_if_false)`. In a nested IF, the false branch contains another IF. Excel checks top to bottom and stops at the first TRUE, so **order matters**: test the highest threshold first.
+
+**AND vs OR:** `AND` needs every condition TRUE. `OR` needs at least one.
+
+[MISTAKE] **Mistakes in your sheet:**
+- **Column M** has no final else: `IF(F2>60,"c")` returns `FALSE` when the average is 60 or below. Add `,"FAIL"` at the end.
+- **Cell J5** refers to `I2` instead of `I5` (a wrong row). Row 5 shows `QAULIFY` although its age is 16.
+- **Column D** contains the text `Invalid Email` (leftover, not marks).
+  - `AVERAGE`, `MAX` and `MIN` **ignore text**, so your averages only used 2 subjects.
+  - In `L`, `"Invalid Email">35` evaluates to **TRUE**, because Excel treats text as larger than any number. That's why `L` showed `pass`.
+- Typos: `QAULIFY`, `UNQULIFY`, `UNQAULIFY`, and `c` in lowercase.
+
+> [EXAM] **Self-test:** *Write a formula giving "Distinction" if average ≥ 75, "First" if ≥ 60, "Pass" if ≥ 40, otherwise "Fail".*
+> **A:** `=IF(F2>=75,"Distinction",IF(F2>=60,"First",IF(F2>=40,"Pass","Fail")))`
+
+---
+
+### Sheet2: UNIQUE and FREQUENCY [365]
+
+**Data:** 15 people with ages in `C2:C16`.
+
+- `D2: =UNIQUE(C2:C16)` lists each distinct age once. It **spills** down to `D2:D10` (9 unique ages: 25, 28, 29, 35, 34, 26, 31, 30, 33).
+- `E2: =FREQUENCY(D2:D10,C2:C16)` was meant to count how many people have each age.
+
+**FREQUENCY syntax:** `FREQUENCY(data_array, bins_array)`
+- **data_array** = all the raw values (the ages)
+- **bins_array** = the cut-off points (the unique ages)
+- It returns **one more result than there are bins** (the last is "values above the highest bin"), so select/spill 10 cells for 9 bins.
+
+[MISTAKE] **Your arguments are swapped.** Correct version:
+
+```excel
+=FREQUENCY(C2:C16, D2:D10)
+```
+
+Correct counts: 25→2, 28→2, 29→3, 35→1, 34→3, 26→1, 31→1, 30→1, 33→1 (total 15).
+
+**Easier alternative:** `=COUNTIF($C$2:$C$16, D2)` and fill down.
+
+> [EXAM] **Self-test:** *How do you get a list of distinct ages?* → `=UNIQUE(C2:C16)`. *How do you count each?* → `FREQUENCY` or `COUNTIF`.
+
+---
+
+### Sheet3: Lookups + Drop-down
+
+**Data:** Sr no, name, designation, salary (`A1:D16`). Cell `G8` has a **drop-down** of names.
+
+**Creating the drop-down:** select `G8` → Data → Data Validation → Allow: **List** → Source: `=$B$2:$B$16`.
+
 | Formula | Meaning |
 |---|---|
-| `IF(test, value_if_true, value_if_false)` | Does one thing if the test is true, another if not |
-| `AVERAGE(range)` | Mean of the numbers |
-| `MAX` / `MIN` | Largest / smallest |
+| `=VLOOKUP(B2,B1:D16,1,0)` | Looks up B2 in the first column of the table and returns column 1 (the name itself) |
+| `=VLOOKUP(B2,B1:D16,3,0)` | Same lookup, returns column **3** of `B:D` (the salary) |
+| `=XLOOKUP(B2,B1:B16,C1:C16)` [365] | Finds B2 in `B1:B16`, returns the matching value from `C1:C16` (designation) |
 
-### Sample result from your file (row 2)
-phy 55, chem 23, math 61 → avg 46.33 → rounded 46.34 → age 22 → "qualify" → **fail** (46.34 is below 55).
+**VLOOKUP anatomy:** `VLOOKUP(lookup_value, table_array, col_index_num, [range_lookup])`
+- The lookup column must be the **left-most** column of the table.
+- `col_index_num` counts from the left of `table_array`. In `B:D`: name = 1, designation = 2, salary = 3.
+- Last argument `0` = exact match.
 
-**Exam tips:** the results change on every recalculation because of RANDBETWEEN, so mention that. Age 18 exactly gives "not applicable" because the test is `>18`, not `>=18`.
+**XLOOKUP anatomy:** `XLOOKUP(lookup_value, lookup_array, return_array, [if_not_found], [match_mode], [search_mode])`. It can look left, has a built-in "not found" message, and defaults to exact match.
+
+[MISTAKE] **What to fix:** the lookup value was fixed at `B2` and the table wasn't locked. The idea of the drop-down is to look up **the chosen name**:
+
+```excel
+=VLOOKUP($G$8, $B$1:$D$16, 3, 0)        ← salary of whoever is selected
+=XLOOKUP($G$8, $B$2:$B$16, $C$2:$C$16)  ← designation of whoever is selected
+```
+
+> [EXAM] **Self-test:** *Salary of "tanvi" with VLOOKUP?* → `=VLOOKUP("tanvi",B2:D16,3,0)`. *Why `#N/A`?* The value isn't found (typo, trailing space, or wrong lookup column).
 
 ---
 
-## 2. Sheet2: Marks + Grades + Colour Rules
+### Sheet4: INDEX and Drop-down
 
-**Aim:** Same marks table (10 students, dish names as names), plus subject-wise pass checks, grades and colour highlighting.
+**Data:** A timetable. Times in `A2:A11` (11.15, 12.15, …) and columns `a`, `b`, `c`, `d` hold subjects. `H6` has a drop-down of times.
 
-Columns A to L are built exactly like Sheet1 (avg, max, min, round off, age, criteria, result). `C2` is typed as 98. Extra columns:
+- `I6: =INDEX(A1:E11,2,3)` gives **`chem`**: row 2, column 3 of that block (cell `C2`).
 
-### M: "result1" (must pass ALL subjects)
-`=IF(AND(C2>33,D2>33,E2>33),"pass","fail")`
-- `AND(...)` is TRUE only if **every** condition is true.
-- A student passes only if each subject is above 33.
+**INDEX syntax:** `INDEX(array, row_num, column_num)` returns the value at that position inside the range.
 
-### N: "grade1" (fail if ANY subject is low)
-`=IF(OR(C2<33,D2<33,E2<33),"fail","pass")`
-- `OR(...)` is TRUE if **at least one** condition is true.
-- Note the logic is flipped: "if any subject is below 33 → fail".
-- **M and N are the same idea written two ways.** They differ only at exactly 33: M fails a 33 (`>33` is false), N passes it (`<33` is false).
+**Power move: INDEX + MATCH** (what you'd use with the drop-down):
 
-### O: "Grade" (nested IF)
-`=IF(F2>=90,"A",IF(F2>=50,"B",IF(F2>=10,"C")))`
-- Average 90 or above is **A**; 50 to 89 is **B**; 10 to 49 is **C**.
-- Trap: the last `IF` has no "else" part, so an average below 10 returns `FALSE`. A safer version: `=IF(F2>=90,"A",IF(F2>=50,"B","C"))`.
-- Nested IF is read left to right and stops at the first true test, so the order of conditions matters.
+```excel
+=INDEX($B$2:$E$11, MATCH($H$6,$A$2:$A$11,0), MATCH("c",$B$1:$E$1,0))
+```
+- `MATCH(value, range, 0)` returns the **position** of the value.
+- Together: "go to the row where time = H6, and the column headed c."
 
-### Conditional formatting on C2:E11 (the marks)
-Home → Conditional Formatting → Highlight Cells Rules → Less Than / Greater Than. Rules in priority order:
+> [EXAM] **Self-test:** *What does `=INDEX(A1:E11,5,2)` return?* → Row 5 of the block is the 14.15 row, column 2 = `org chem` (cell `B5`).
 
-| Priority | Rule | Look |
+---
+
+### Sheet5: SUMIF with UNIQUE [365]
+
+**Data:** 20 employees with designation (`C`) and salary (`D`).
+
+- `E2: =UNIQUE(C2:C21)` spills the designation list (14 designations).
+- `F2: =SUMIF(C2:C21,E2,D2:D21)` is the total salary per designation.
+
+**SUMIF anatomy:** `SUMIF(range_to_check, criteria, range_to_add)`.
+
+[MISTAKE] **Drifting ranges.** You filled down without locking, so the ranges slid:
+`F2` uses `C2:C21`, `F6` uses `C6:C25`, `F10` uses `C10:C29`, `F14` uses `C14:C33`.
+The answers happened to be right only because the matching rows were still inside the window. Always write:
+
+```excel
+=SUMIF($C$2:$C$21, E2, $D$2:$D$21)
+```
+
+> [EXAM] **Self-test:** *Total salary of all "manager" staff?* → `=SUMIF(C2:C21,"manager",D2:D21)`
+
+---
+
+### Sheet6: SUMIFS (two conditions) and COUNTIF
+
+**Data:** designation (`C`), salary (`D`), marital status (`E`, with `m` = married, `u` = unmarried). A summary grid sits at `H2:J8`.
+
+```excel
+=SUMIFS($D$2:$D$21, $C$2:$C$21, $H3, $E$2:$E$21, I$2)
+```
+- Sum salary where designation = the row label **and** status = the column header.
+- `$H3` locks the **column** only (so it can fill right) and `I$2` locks the **row** only (so it can fill down). This is a **mixed reference**. One formula fills the whole grid.
+
+**Your version:** `$D$2:D21` locks only the start. When copied down it grows to `D22`, `D23`... It still worked because the extra rows are blank, but write `$D$2:$D$21`.
+
+**COUNTIF block:**
+- `=COUNTIF(E2:E21,"m")` → 9 married; `"u"` → 11 unmarried (9 + 11 = 20 OK)
+- `=COUNTIF(C2:C21,H13)` → number of staff per designation
+
+[MISTAKE] `H13: =UNIQUE(C12:C31)` includes blank cells below the data, so a stray `0` appears in `H19`. Use `UNIQUE(C2:C21)`.
+
+**Merged cell:** `H10:I10` ("count") was merged with Home → Merge & Center.
+
+> [EXAM] **Self-test:** *Salary total of unmarried directors?* → `=SUMIFS(D2:D21,C2:C21,"director",E2:E21,"u")`
+
+---
+
+### Sheet7: DSUM, AVERAGEIF, AVERAGEIFS, drop-downs
+
+**Data (`A1:E20`):** device, region, month, party name, sale. Helper lists: `F` = unique regions, `G` = unique devices (both from `UNIQUE`).
+
+**Drop-downs:** `I2` (region, source `$F$2:$F$5`) and `J2` (device, source `$G$2:$G$10`).
+
+**DSUM (database function)**: `=DSUM(A1:G20, E1, I1:J2)`
+- `database` = whole table **including headers**
+- `field` = which column to add (`E1` = "sale")
+- `criteria` = a small block: **header row + condition row**. Here `region | device` over `east | I tag`.
+- Conditions on the **same row = AND**; conditions on **different rows = OR**.
+- Criteria headers must match the database headers **exactly**.
+
+**AVERAGEIF** `(range, criteria, average_range)` → average sale per device:
+`=AVERAGEIF(A1:A20, I6, E1:E20)`
+
+**AVERAGEIFS** `(average_range, crit_range1, crit1, crit_range2, crit2…)`:
+`=AVERAGEIFS(E1:E20, B1:B20, B2, A1:A20, A2)` → average where region = B2 **and** device = A2.
+
+[MISTAKE] **Problems:**
+- AVERAGEIF ranges drift down (`A1:A20`, `A2:A21`, `A3:A22`…). Lock them: `$A$2:$A$20`, `$E$2:$E$20`.
+- Column K uses relative `B2`/`A2`, so each row averages its own region+device pair, which isn't a meaningful summary. For the **drop-down selection**, point at `$I$2` and `$J$2`:
+  `=AVERAGEIFS($E$2:$E$20,$B$2:$B$20,$I$2,$A$2:$A$20,$J$2)`
+- Data typos: `ipade pro` vs `ipad pro` become two "unique" devices. **Clean your data first** (`TRIM`, spell-check).
+
+> [EXAM] **Self-test:** *Total sale for "south" region and "iphone air" with DSUM?* → Criteria block `region | device` / `south | iphone air`, then `=DSUM(A1:E20,"sale",I1:J2)`.
+
+---
+
+### Sheet8: Loan EMI (PMT, IPMT, PPMT)
+
+**Inputs:** rate `C1` = 10% (yearly), amount `C2` = ₹100,000, duration `C3` = 10 months.
+
+| Cell | Formula | Meaning |
 |---|---|---|
-| 1 | less than 36 | light red fill |
-| 2 | greater than 85 | green |
-| 3 | greater than 55 | yellow |
-| 4 | greater than 35 | yellow |
-| 5 | less than 33 | red text + red fill |
-| 6 | greater than 80 | yellow |
+| `C4` | `=PMT(C1/12,C3,-C2,,1)` | Monthly EMI (₹10,377.56) |
+| `C6` | `=C4*C3` | Total paid over the loan (₹103,775.58) |
+| `G1:G10` | `=IPMT(C1/12,F1:F10,C3,-C2)` | **Interest** part of each month's EMI |
+| `H1:H10` | `=PPMT(C1/12,F1:F10,C3,-C2)` | **Principal** part of each month's EMI |
 
-Several rules can apply to one cell. When their formats clash, the higher-priority (lower number) rule wins. Manage them from Conditional Formatting → Manage Rules.
+**Syntax:**
+- `PMT(rate, nper, pv, [fv], [type])`
+- `IPMT(rate, per, nper, pv, [fv], [type])`
+- `PPMT(rate, per, nper, pv, [fv], [type])`
 
----
+**Key ideas:**
+- Divide the yearly rate by 12 for monthly payments. `nper` is in months.
+- Put `-` in front of PV so the EMI comes out **positive**.
+- `type`: `0` = payment at end of month (default), `1` = start of month.
+- **EMI = Interest + Principal** every month. Interest falls each month while principal rises (your column G decreases from ~₹833 to ~₹86, and H increases).
 
-## 3. Sheet3: VLOOKUP, XLOOKUP and a Drop-down
+[MISTAKE] `PMT` uses `type = 1` but `IPMT`/`PPMT` use the default `type = 0`, so `G + H` won't equal `C4`. Use the **same type** everywhere (normally leave it out, giving 0).
 
-**Aim:** Look up an employee's details from a table of 15 employees (sr no, name, designation, salary).
-
-Salary column: `=RANDBETWEEN(10000,90000)`.
-
-Lookup panel (F2:G4):
-
-| Cell | Formula | Returns |
-|---|---|---|
-| G2 | `=VLOOKUP(B2,B1:D16,1,0)` | the name itself (column 1 of the table) |
-| G3 | `=XLOOKUP(B2,B1:B16,C1:C16)` | the designation |
-| G4 | `=VLOOKUP(B2,B1:D16,3,0)` | the salary (column 3 of B:D) |
-
-### VLOOKUP
-`VLOOKUP(lookup_value, table_array, col_index_num, [range_lookup])`
-- `B2` is the value to find.
-- `B1:D16` is the table. **The lookup value must be in the first column of the table** (column B).
-- Column index: B=1, C=2, D=3. So **3 gives salary**.
-- `0` (or FALSE) means **exact match**. Always use 0 for names.
-- VLOOKUP can only look to the **right** of the lookup column.
-
-### XLOOKUP (Excel 365)
-`XLOOKUP(lookup_value, lookup_array, return_array, [if_not_found], [match_mode], [search_mode])`
-- Looks in one column (`B1:B16`) and returns from another (`C1:C16`).
-- Exact match by default, can look left, and no column numbers to count.
-
-### Drop-down list (cell H7)
-Data → Data Validation → Allow: **List** → Source: `=$B$2:$B$16`.
-Result: H7 shows a drop-down of the 15 names (currently "vidya").
-
-**Gotcha in your file:** the formulas in G2:G4 look up `B2`, not `H7`, so the drop-down is not connected. To make it work, replace `B2` with `H7` in all three formulas. Then picking a name in H7 changes the results.
+> [EXAM] **Self-test:** *EMI on ₹5,00,000 at 12% p.a. for 24 months?* → `=PMT(12%/12,24,-500000)`
 
 ---
 
-## 4. Sheet4: INDEX on a Timetable Grid
+### Sheet9: Seat Booking (COUNT family + Conditional Formatting)
 
-**Aim:** Show a timetable-style grid (time slots × subjects) and pick a value by row and column position.
-
-- Column A holds times shown as `3:36, 4:36, 5:36 ... 12:36` (one hour apart). The cells hold fractions of a day, formatted as time `h:mm`.
-- Columns B to E hold subjects (math, chem, bio, eco, ...), one row per time slot.
-- Cell `I9`: `=INDEX(A1:E11,2,2)` returns **math**.
-
-### INDEX
-`INDEX(array, row_num, [column_num])`
-- Counts **inside the selected range**: row 2, column 2 of `A1:E11` is cell **B2**.
-- Do not count from the sheet's A1. Count from the first cell of the range you selected.
-
-**Exam tip:** INDEX is often paired with MATCH for two-way lookups: `=INDEX(range, MATCH(row_item, row_headers, 0), MATCH(col_item, col_headers, 0))`. That pairing is not in your file, but it is a common question.
-
----
-
-## 5. Sheet5: UNIQUE + SUMIF (salary per designation)
-
-**Aim:** Get the list of distinct designations and total salary for each.
-
-Data (A1:D21): sr no, name, designation, salary (typed values) for 20 employees. Note `CFO` appears twice (devarsh and shlok).
-
-| Cell | Formula | What it does |
-|---|---|---|
-| E2 | `=UNIQUE(D2:D21)` | spills all distinct salaries down column E |
-| F2 | `=UNIQUE(C2:C21)` | spills the distinct designations (19 of them, because CFO repeats) |
-| G2 | `=SUMIF($C$2:C21,F2,$D$2:D21)` | total salary for the designation in F2 |
-
-`G2` is filled down along the spill.
-
-### SUMIF
-`SUMIF(range, criteria, [sum_range])`
-- `range` is where to check (designations, C).
-- `criteria` is what to match (`F2`).
-- `sum_range` is what to add (salary, D).
-
-**Result highlight:** CFO = 74,169 + 86,861 = **161,030**. The other designations show their single salary. `G21` shows 0 because F21 is empty.
-
-**Gotcha:** the end of the range drifts (`C21`, `C22`, `C23`...) as the formula is filled down. It works only because those extra cells are empty. Lock it as `$C$2:$C$21` and `$D$2:$D$21`.
-
----
-
-## 6. Sheet6: UNIQUE + SUMIFS + COUNTIF
-
-**Aim:** Total salary by occupation and marital status, plus counts.
-
-Data A1:D20: name, occupation, marital status, salary (`=RANDBETWEEN(20000,150000)`).
-
-### Salary matrix (G2:I9)
-- `G3`: `=UNIQUE(B2:B20)` spills the 7 distinct occupations (G3:G9).
-- Headers: `H2` = married, `I2` = unmarried.
-- `H3` (filled across and down):
-  `=SUMIFS($D$2:D20,$B$2:B20,$G3,$C$2:C20,$H$2)`
-  - Adds salary where **occupation = G3 AND marital status = H2**.
-  - `$G3` locks the column (occupation list), `$H$2` locks the header cell.
-- `I3` is the same with `$I$2`.
-
-### Counts
-| Cell | Formula | Result |
-|---|---|---|
-| G11 (married) | `=COUNTIF(C2:C20,C4)` | counts cells equal to "married" (C4 holds "married") |
-| G12 (unmarried) | `=COUNTIF(C2:C20,C2)` | counts cells equal to "unmarried" |
-| G13:G19 | `=COUNTIF(B2:B20,$F$13:F19)` (array) | head-count per occupation (officer, accountant, CEO, scientist, engineer, clerk, teacher) |
-
-### Data error to know about
-Cell `C3` (Aarna) says **"unmerried"** (misspelt). Excel treats it as a different word, so:
-- the *married* count is 8 and the *unmarried* count is 10, which adds up to 18, not 19;
-- Aarna's salary (an accountant) is missing from the "unmarried" total for accountants, so that total is short by her salary.
-
-Fix the spelling and everything updates.
-
-### SUMIFS vs SUMIF
-`SUMIFS(sum_range, criteria_range1, criteria1, criteria_range2, criteria2, ...)`. All the conditions must be true (AND logic).
-
----
-
-## 7. Sheet7: Sales Data: DSUM, AVERAGEIF, AVERAGEIFS
-
-**Aim:** Analyse Apple-product sales (19 rows) by device and region using database and conditional-average functions.
-
-Data A1:E20: device | region | month | party name | sale.
-Helper lists:
-- `F2`: `=UNIQUE(B2:B20)` spills the 4 regions (east, west, south, north).
-- `G2`: `=UNIQUE(A2:A20)` spills the 15 distinct devices.
-
-### Drop-downs for the DSUM criteria
-- `I4` (region): Data Validation → List → `=$F$2:$F$5`
-- `J4` (device): Data Validation → List → `=$G$2:$G$20`
-
-### DSUM: `K4`
-`=DSUM(A1:G20,E1,I3:J4)`
-
-`DSUM(database, field, criteria)`
-- `database` = `A1:G20`: the whole table **including the header row**.
-- `field` = `E1`: which column to add (the header "sale").
-- `criteria` = `I3:J4`: a mini table. Row 3 holds the **headers** (`region`, `device `) and row 4 holds the **conditions** (`south`, `macbook`).
-- Conditions on the same row are AND. So this adds sales where **region = south AND device = macbook** → **116,055**.
-- **Trap:** the header in the criteria must match the database header *exactly*. Your headers are `device ` with a trailing space in both places. That is why it works.
-
-### AVERAGEIF: `J6:J24`
-`=AVERAGEIF(A1:A20,I6,E1:E20)`
-`AVERAGEIF(range, criteria, average_range)`: the average sale of the device named in `I6` (a typed list of devices). Example: macbook → average of 116,055 and 107,063 = **111,559**.
-
-### AVERAGEIFS: `K6:K24`
-`=AVERAGEIFS(E2:E20,B2:B20,B2,A2:A20,A2)`
-`AVERAGEIFS(average_range, criteria_range1, criteria1, criteria_range2, criteria2, ...)`: the average sale where **region = B2 AND device = A2**. Each row looks at one data row's region and device pair. Because there is one record per combination here, the result equals that sale.
-
-**Notice:** AVERAGEIF puts the average range **last**; AVERAGEIFS puts it **first**. The ranges drift as the formulas are filled down, which works only because the ranges are long enough.
-
----
-
-## 8. Sheet8: Loan EMI (PMT, IPMT, PPMT)
-
-**Aim:** Calculate the monthly EMI for a loan and split each EMI into interest and principal.
-
-Inputs:
-| Cell | Value |
-|---|---|
-| C1 | interest rate = 0.1 (10% per year) |
-| C2 | amount = 100,000 |
-| C3 | duration = 10 months |
-
-### EMI: `C4`
-`=PMT(C1/12,C3,-C2,,1)` → **10,377.56**
-
-`PMT(rate, nper, pv, [fv], [type])`
-- `rate` = `C1/12`: **annual rate divided by 12**, because payments are monthly.
-- `nper` = `C3`: number of payments.
-- `pv` = `-C2`: the loan is entered as a **negative** so the EMI comes out positive.
-- `fv` is skipped (empty comma).
-- `type` = `1`: payment is made at the **start** of each month. (`0` or omitted means end of month.)
-
-### Total paid: `C6`
-`=(C4*C3)` → 103,775.58. Total interest = 103,775.58 − 100,000 = **3,775.58**.
-
-### Interest and principal split (columns F, I, J)
-- `F2:F10` hold the period numbers 2 to 10 (and `H1` has a stray `1`).
-- `I1:I10`: array `=IPMT(C1/12,F1:F10,C3,-C2)` is the **interest part** of each EMI.
-- `J1:J10`: array `=PPMT(C1/12,F1:F10,C3,-C2)` is the **principal part** of each EMI.
-
-`IPMT(rate, per, nper, pv, [fv], [type])` and `PPMT(...)` use the same arguments with `per` = which period.
-
-### Two real problems in this sheet
-1. **`I1` and `J1` show `#NUM!`.** The period range starts at `F1`, which is empty, and period 0 is invalid. Fix: put `1` in `F1` (and delete the stray `H1`), or start the range at `F2`.
-2. **Mismatch with type:** `PMT` uses `type=1` (start of month) but `IPMT`/`PPMT` don't pass a type, so they assume end of month. As a result interest + principal per row (about 10,464.04) does not equal the EMI in C4 (10,377.56). Use the same `type` everywhere. Add `,,1` to IPMT/PPMT, or drop `,,1` from PMT.
-
-### Unfinished block
-`B14:C16` has `emi = 15,000`, `60`, `0.12` with no formula. This looks like the setup for the reverse question: how big a loan can a 15,000 EMI repay over 60 months at 12%? Formula (my addition, not in your file): `=PV(0.12/12,60,-15000)` ≈ **6,74,325**.
-
----
-
-## 9. Sheet9: Seat Booking Grid (COUNT functions)
-
-**Aim:** A seating chart (7 columns × 16 rows) where `m` = male booking, `f` = female booking, blank = free. Count bookings.
-
-Counts (K5:L8):
+A 12-row × 7-column seat grid where `m` = male and `f` = female; blanks are free seats (`A1:G12`).
 
 | Label | Formula | Result |
 |---|---|---|
-| booked | `=COUNTA(A1:G16)` | **47** |
-| remaining | `=COUNTBLANK(A1:G16)` | **65** |
-| male | `=COUNTIF(A1:G16,"m")` | **24** |
-| female | `=COUNTIF(A1:G16,"f")` | **22** |
+| booked | `=COUNTA(A1:G12)` | 33 (non-empty cells) |
+| remaining | `=COUNTBLANK(A1:G12)` | 51 (empty cells) |
+| men | `=COUNTIF(A1:G12,"m")` | 19 |
+| female | `=COUNTIF(A1:G12,"f")` | 14 |
 
-- `COUNTA` counts **non-empty** cells. `COUNTBLANK` counts **empty** cells. Together: 47 + 65 = 112 = 7 × 16 seats. ✔
-- `COUNTIF(range, criteria)` counts cells equal to the criteria. Text goes in quotes.
-- `COUNT` (not used here) counts only numbers.
-- **Data error:** cell `G12` contains `fs` (a typo). It is counted as booked (47) but is neither "m" nor "f", so 24 + 22 = 46, one short of 47.
+Check: 33 + 51 = 84 = 12 × 7 OK and 19 + 14 = 33 OK
 
-### Conditional formatting on A1:G16
-Four "Cell Value" rules compare text alphabetically: greater than "m", less than "f", greater than "m", greater than "f". Text comparison is alphabetical, so "m" is greater than "f". That is how `m` and `f` seats get different colours. Open Manage Rules to see the exact colours.
+**Differences:** `COUNT` counts **numbers only**, `COUNTA` counts **anything non-empty**, `COUNTBLANK` counts **empty** cells, and `COUNTIF` counts cells **meeting a condition**.
 
----
+**Conditional formatting:** `f` → yellow, `m` → red (Highlight Cells Rules → *Equal To…*). You also tried **colour scales** on the number block `P18:S21` (Home → Conditional Formatting → Color Scales).
 
-## 10. Sheet10: Orders Data + Pivot Table + Charts
+[MISTAKE] `J6` uses `A1:G13` (one row too many). Keep all four ranges identical. Also stray rules (`greater than "m"`) exist and can be deleted via Manage Rules.
 
-**Aim:** Summarise sales by country and region with a pivot table, and show it as charts.
-
-Data A1:I16 (15 orders): order no, order date, customer name, country, state, city, region, sales (`=RANDBETWEEN(1000,4000)`), profit (`=RANDBETWEEN(1500,3000)`).
-
-**Note:** order dates (like `01.01.23`) are stored as **text**, not real dates. Date functions and date grouping will not work on them until converted.
-
-### Pivot table (B19:H26): "PivotTable1"
-1. Click inside the data → **Insert → PivotTable** → source `Sheet10!A1:I16` → place it in the same sheet at B19.
-2. Drag **country** to **Rows**.
-3. Drag **region** to **Columns**.
-4. Drag **sales** to **Values** (set to **Sum**) → the pivot shows "Sum of sales".
-
-Result saved in your file: countries down the side, regions (abz, bdh, fcki, hsb, ncs) across the top, Grand Total **41,588** (for example india = 11,010).
-
-### Charts on this sheet
-- **Pivot chart (clustered column):** select the pivot → Insert → Column chart → Clustered Column. It uses the pivot (rows `B21:B26`, one series per region).
-- **Pie chart:** categories `D2:D16` (country), values `H2:H16` (sales). Select those columns → Insert → Pie. Each order is one slice.
-
-### Pivot rules to remember
-- A pivot **does not update itself**. After the data changes (and RANDBETWEEN changes it constantly), right-click → **Refresh** (or Alt+F5).
-- Pivot totals can therefore disagree with the live data.
+> [EXAM] **Self-test:** *What percentage of seats are booked?* → `=COUNTA(A1:G12)/(ROWS(A1:G12)*COLUMNS(A1:G12))`
 
 ---
 
-## 11. Sheet11: Pivot Table: Sales by City
+### Sheet10: Pivot Table + Charts
 
-**Aim:** A second pivot built from the same orders data.
+**Data (`A1:I16`):** order no, date, customer, country, state, city, region, sales, profit.
 
-- Source: `Sheet10!A1:I16`.
-- Location: `A3:B9`.
-- Rows: **city**, with **order date** as a second row field (only the city level is shown).
-- Values: **Sum of sales**.
+**Pivot table (`A18:F24`)**: Rows = **country**, Columns = **region**, Values = **Sum of sales**.
 
-Saved result: ahd 10,075 | denpasar 6,850 | illinois 4,984 | london 7,982 | melbourne 8,417 | Grand Total **38,308**.
+**How to make one:** click inside the data → Insert → PivotTable → OK → drag fields into **Rows / Columns / Values / Filters**.
 
-**Why 38,308 and not 41,588 (Sheet10)?** Each pivot made separately from the same range gets its own cache, and the sales are random numbers, so the two pivots were last refreshed at different moments. (This is my reading. Refresh both and compare to verify.)
+**Charts:** a 3-D column/bar chart and a pie chart on this sheet. One is a **PivotChart** linked to the pivot table, and the other plots region vs sales from `G2:H16`. Insert → Charts, or Insert → PivotChart.
+
+[MISTAKE] **Traps:**
+- Dates such as `10.10.2026` are **text** (mixed `dd/mm/yyyy` and `mm-dd-yy` formats applied), so they can't be grouped into months or years.
+- `D2` (country) is blank spaces, and `cicago` is misspelt. These show up as odd pivot rows.
+- Sales use `RANDBETWEEN`, so after any recalculation the pivot is **stale** until you hit Refresh.
+
+> [EXAM] **Self-test:** *How do you get total profit by state?* → New pivot, State in Rows, Profit in Values (set to Sum).
 
 ---
 
-## 12. Sheet12: Excel Table, OFFSET and Pivot Tables
+### Sheet11: Excel Table, Two Pivots, OFFSET
 
-**Aim:** Convert data to a Table, copy it with a dynamic OFFSET formula, and summarise revenue by customer type.
+**Data:** zone, customer type (`online`/`cash`/`credit card`), revenue → converted into **`Table3`** (select data → `Ctrl+T`).
 
-Data A1:C14: zone | custome type | revenue (for example north / cash / 2448).
+**Why use a Table?**
+- Auto-expands when you add rows, so pivots and formulas based on it grow too.
+- Banded rows, filter buttons, and **structured references** like `Table3[revenue]`.
 
-### Excel Table
-Select `A1:C14` → **Ctrl+T** (Insert → Table). Your file names it **Table1**, style *Medium 2*, with filter buttons. Tables grow automatically when you add rows.
+**Two pivots:** *Row = customer type, Values = Sum of revenue*, one built on the Table and one on a plain range.
+[MISTAKE] Their grand totals differ (**29,817 vs 30,962**). That's a classic sign one pivot is **stale** or built on a different snapshot. Refresh both (`Alt+F5`).
 
-### OFFSET array (E2:G15)
-`=OFFSET($A$2,0,0,COUNTA($A:$A),COUNTA($1:$1))`
+**`H2: =OFFSET($A$2,0,0,COUNTA($A:$A),COUNTA($1:$1))`** is a **dynamic range** that grows with the data.
 
-`OFFSET(reference, rows, cols, [height], [width])`
+`OFFSET(start_cell, rows_down, cols_right, height, width)`
 - Start at `A2`, move 0 rows and 0 columns.
-- **height** = `COUNTA($A:$A)` = number of filled cells in column A (14, includes the header).
-- **width*
+- Height = number of items in column A. Width = number of items in row 1 (3).
+
+[MISTAKE] `COUNTA($A:$A)` counts the **header too** (13), but you start at `A2`, so the range is one row too tall. That's why row 14 shows `0, 0, 0`. Fix:
+
+```excel
+=OFFSET($A$2,0,0,COUNTA($A:$A)-1,COUNTA($1:$1))
+```
+
+> [EXAM] **Self-test:** *Why use a table rather than a plain range?* → It grows automatically and keeps formulas/pivots/charts up to date.
+
+---
+
+### Sheet12: Pivot with Two Row Fields
+
+**Data (`A3:C12`):** city, date, sales. The pivot has **City → Date** as nested row labels and **Sum of SALES** as values (Grand Total = 38,957). The title "PIVOT TABLE" is merged across `A1:D1`.
+
+[MISTAKE] Dates are text (`10.04.2026`), so they appear as individual items instead of grouping by Year/Month. With real dates you could right-click → **Group** → Months/Years.
+
+> [EXAM] **Self-test:** *How do you show only one city's data?* → Drag City to **Filters**, or use the row-label filter drop-down.
+
+---
+
+### Sheet13: SUM / AVERAGE and the Insert Tab
+
+- `F2: =SUM(B2:E2)` is each student's total.
+- `G2: =AVERAGE(B2:E2)` is each student's average.
+- An embedded **screenshot** shows the same functions in vertical and horizontal layouts (total 344, average 57.33).
+
+**Insert tab tour (visible in your screenshot):** PivotTable, Recommended PivotTables, Table, Pictures, Shapes, Icons, 3D Models, SmartArt, Screenshot, Recommended Charts, Maps, PivotChart, Sparklines (Line / Column / Win-Loss), Slicer, Timeline, Link, Comment, Text Box, Header & Footer, Equation, Symbol.
+
+> [EXAM] **Self-test:** *Which feature gives a tiny chart inside one cell?* → Sparklines. *Clickable filter buttons for a pivot?* → Slicer (or Timeline for dates).
+
+---
+
+### Sheet14: SEQUENCE and Map Chart [365]
+
+**`A1: =SEQUENCE(10,10,50,-5)`** fills a 10 × 10 grid starting at **50**, stepping by **−5** across then down (50, 45, 40 … −445).
+
+`SEQUENCE(rows, [columns], [start], [step])`
+
+**Filled map chart:** countries in `A13:A20` with salary in `B13:B20`, charted with Insert → Maps → **Filled Map**.
+[MISTAKE] Map charts need recognisable place names and an internet connection. `chaina`, `thai`, `swi` may fail to plot. Use `China`, `Thailand`, `Switzerland`.
+
+> [EXAM] **Self-test:** *Make a list 1 to 20.* → `=SEQUENCE(20)`. *Even numbers 2 to 20?* → `=SEQUENCE(10,1,2,2)`
+
+---
+
+### Sheet15: DATEDIF, TODAY, and Wildcard SUMIF
+
+**Data:** name, age, dept, position, salary, joining date, duration, "more than 5 years".
+
+```excel
+G: =DATEDIF(F2,TODAY(),"Y")&" years, "&DATEDIF(F2,TODAY(),"YM")&" months, "&DATEDIF(F2,TODAY(),"MD")&" days"
+H: =IF(DATEDIF(F2,TODAY(),"Y")>=5,"Yes","No")
+I: =SUMIF(C2:C11,"phy",E2:E11)
+J: =SUMIF(D2:D11,"*teacher*",E2:E11)
+```
+
+**DATEDIF(start, end, unit)** is a "hidden" function (not in the function list, but it works):
+
+| Unit | Gives |
+|---|---|
+| `"Y"` | complete years |
+| `"M"` | complete months |
+| `"D"` | days |
+| `"YM"` | months **after** the full years |
+| `"MD"` | days **after** the full months |
+| `"YD"` | days after the full years |
+
+`&` joins text pieces. `TODAY()` returns today's date and updates daily.
+
+**Wildcards:** `*` = any number of characters, `?` = exactly one, `~` = escape. `"*teacher*"` matches `"teacher "` even with the trailing space. (An exact `"teacher"` would **fail** because the cell contains `"teacher "`. Good catch to remember.)
+
+[MISTAKE] In column I, ranges drift (`C3:C12`, `C4:C13`…). Lock them: `$C$2:$C$11`.
+
+> [EXAM] **Self-test:** *Years of service only?* → `=DATEDIF(F2,TODAY(),"Y")`. *Flag staff with 10+ years?* → `=IF(DATEDIF(F2,TODAY(),"Y")>=10,"Yes","No")`
+
+---
+
+### Sheet16: Custom Function `AddNameSpaces` (VBA)
+
+Input like `VidyaChaudhari` → output `Vidya Chaudhari`. Column C calls `=AddNameSpaces(B2)`.
+
+[MISTAKE] **Important:** the macro code is **not stored in this file** (a plain `.xlsx` can't hold macros), so the formulas will show `#NAME?` if you reopen the file elsewhere. Macros require **`.xlsm`**.
+
+**How to recreate it:** `Alt+F11` → Insert → Module → paste → save as `.xlsm`.
+
+```vba
+Function AddNameSpaces(txt As String) As String
+    Dim i As Long, ch As String, result As String
+    result = Left(txt, 1)
+    For i = 2 To Len(txt)
+        ch = Mid(txt, i, 1)
+        If ch Like "[A-Z]" And Mid(txt, i - 1, 1) Like "[a-z]" Then
+            result = result & " "
+        End If
+        result = result & ch
+    Next i
+    AddNameSpaces = result
+End Function
+```
+
+**No-VBA alternative:** type the first result by hand, then press **`Ctrl+E` (Flash Fill)**. 365 users can also use `=TRIM(REGEXREPLACE(B2,"([a-z])([A-Z])","$1 $2"))`.
+
+---
+
+### Sheet17: Splitting Text and Numbers (`GETNAME`, `GetNumbers`)
+
+Input `123vidya` → name `vidya` (column B via `=GETNAME(A1)`) and number `123` (column C via `=GetNumbers(A1)`). Same situation as Sheet16: they were user-defined VBA functions and need an `.xlsm` file.
+
+```vba
+Function GetNumbers(txt As String) As String
+    Dim i As Long, r As String
+    For i = 1 To Len(txt)
+        If Mid(txt, i, 1) Like "[0-9]" Then r = r & Mid(txt, i, 1)
+    Next i
+    GetNumbers = r
+End Function
+
+Function GetName(txt As String) As String
+    Dim i As Long, r As String
+    For i = 1 To Len(txt)
+        If Not Mid(txt, i, 1) Like "[0-9]" Then r = r & Mid(txt, i, 1)
+    Next i
+    GetName = r
+End Function
+```
+
+**Formula-only versions (data is always "3 digits + name"):**
+```excel
+=--LEFT(A1,3)          ← number
+=MID(A1,4,LEN(A1))     ← name
+```
+Flash Fill (`Ctrl+E`) also works for both.
+
+> [EXAM] **Self-test:** *Difference between `LEFT`, `RIGHT`, `MID`?* → `LEFT(text,n)` takes n characters from the start, `RIGHT` from the end, `MID(text,start,n)` from the middle.
+
+---
+
+### Sheet18 + city sheets: Filtering and Splitting Data
+
+**Data (`A1:F15`):** name, gender, city, state, region, segment. **AutoFilter** is on (`Ctrl+Shift+L`).
+
+You filtered by city and copied each result to its own sheet: `ahemdabad`, `mubai`, `jaypur`, `delhi`.
+
+**Steps:** filter city → select the visible cells → `Ctrl+C` → new sheet → `Ctrl+V` (filters copy only visible rows). A faster way: a pivot with City in Filters → Options → **Show Report Filter Pages**.
+
+[MISTAKE] `north ` has a trailing space and `mubai`, `ahemdabad`, `maharast` are misspelt. These break filters and lookups. Clean with `=TRIM()`.
+
+---
+
+### Sheet23: Raw Data
+
+State, category, netsale (`RANDBETWEEN(4000,8000)`). It has no analysis yet, so it's practice material for a pivot (State × Category), a chart, or `SUMIFS`.
+
+---
+
+### Sheet20: E-mail Hyperlinks
+
+Pending amounts with an e-mail column where each address is a clickable `mailto:` link. Create with `Ctrl+K` → **E-mail Address**. Remove with right-click → *Remove Hyperlink*.
+
+---
+
+## 3. Cheat Sheet: All Functions at a Glance
+
+| Function | Syntax | Use |
+|---|---|---|
+| `SUM / AVERAGE / MAX / MIN` | `=SUM(B2:E2)` | Basic stats |
+| `IF` | `=IF(test, yes, no)` | Decisions |
+| `AND / OR` | `=AND(a>1,b>1)` | Multiple conditions |
+| `COUNT / COUNTA / COUNTBLANK` | `=COUNTA(A1:G12)` | Count numbers / non-empty / empty |
+| `COUNTIF` | `=COUNTIF(range, crit)` | Count with 1 condition |
+| `SUMIF` | `=SUMIF(range, crit, sum_range)` | Sum with 1 condition |
+| `SUMIFS` | `=SUMIFS(sum_range, r1, c1, r2, c2)` | Sum with many conditions |
+| `AVERAGEIF(S)` | `=AVERAGEIFS(avg, r1, c1, r2, c2)` | Average with conditions |
+| `DSUM` | `=DSUM(db, field, criteria)` | Sum using a criteria block |
+| `VLOOKUP` | `=VLOOKUP(val, table, col, 0)` | Look right |
+| `XLOOKUP` [365] | `=XLOOKUP(val, look, return)` | Look any direction |
+| `INDEX` | `=INDEX(range, row, col)` | Value at a position |
+| `MATCH` | `=MATCH(val, range, 0)` | Position of a value |
+| `UNIQUE` [365] | `=UNIQUE(range)` | Distinct values |
+| `SEQUENCE` [365] | `=SEQUENCE(r, c, start, step)` | Number grid |
+| `FREQUENCY` | `=FREQUENCY(data, bins)` | Count per bin |
+| `PMT / IPMT / PPMT` | `=PMT(rate/12, n, -pv)` | Loan EMI / interest / principal |
+| `DATEDIF` | `=DATEDIF(start, end, "Y")` | Date difference |
+| `TODAY` | `=TODAY()` | Today's date |
+| `OFFSET` | `=OFFSET(ref, r, c, h, w)` | Dynamic range |
+| `RANDBETWEEN` | `=RANDBETWEEN(1,100)` | Random integers |
+| `LEFT / MID / RIGHT` | `=MID(text, start, n)` | Cut text |
+| `TRIM` | `=TRIM(text)` | Remove extra spaces |
+
+---
+
+## 4. Step-by-Step How-Tos
+
+**Drop-down list:** select cell → Data → Data Validation → Allow **List** → Source `=$B$2:$B$16` (or type items separated by commas).
+
+**Conditional formatting:** select range → Home → Conditional Formatting → Highlight Cells Rules → choose rule → pick colour. Remove via *Clear Rules* or *Manage Rules*.
+
+**Pivot table:** click in data → Insert → PivotTable → drag fields → right-click → Refresh when data changes.
+
+**Pivot chart:** click in the pivot → Insert → PivotChart.
+
+**Excel Table:** click in data → `Ctrl+T` → tick "My table has headers" → rename in Table Design.
+
+**AutoFilter:** `Ctrl+Shift+L`.
+
+**Freeze values:** `Ctrl+C` → `Ctrl+Alt+V` → Values → Enter.
+
+**Flash Fill:** type one example → `Ctrl+E`.
+
+**Hyperlink:** `Ctrl+K`.
+
+**Merge cells:** Home → Merge & Center.
+
+**Absolute reference:** click inside the reference → `F4` (cycles `$A$1` → `A$1` → `$A1` → `A1`).
+
+---
+
+## 5. Mock Exam: Try Without Looking, Then Check
+
+**Q1.** Marks in `C2:E2`. Show "Pass" only if every subject ≥ 40.
+**Q2.** Count how many employees have designation "clerk" in `C2:C21`.
+**Q3.** Total salary (`D`) of "vp" who are "m" (married) in `E`.
+**Q4.** Average sale (`E`) for device "iphone" in `A`.
+**Q5.** A drop-down in `G1` lists names in `B2:B16`; show their salary (column `D`) in `H1`.
+**Q6.** EMI for ₹2,00,000 at 9% over 12 months.
+**Q7.** Years completed between a joining date in `F2` and today.
+**Q8.** Make a 5 × 5 grid starting at 100 and going up by 10.
+**Q9.** Total of `B2:B20` where `A` contains the word "pro" anywhere.
+**Q10.** List distinct regions from `B2:B20`.
+**Q11.** Which feature lets you filter a pivot with clickable buttons?
+**Q12.** Why might a pivot show old numbers?
+
+<br>
+
+**Answers**
+1. `=IF(AND(C2>=40,D2>=40,E2>=40),"Pass","Fail")`
+2. `=COUNTIF($C$2:$C$21,"clerk")`
+3. `=SUMIFS($D$2:$D$21,$C$2:$C$21,"vp",$E$2:$E$21,"m")`
+4. `=AVERAGEIF($A$2:$A$20,"iphone",$E$2:$E$20)`
+5. `=VLOOKUP(G1,$B$2:$D$16,3,0)` (or `=XLOOKUP(G1,$B$2:$B$16,$D$2:$D$16)`)
+6. `=PMT(9%/12,12,-200000)`
+7. `=DATEDIF(F2,TODAY(),"Y")`
+8. `=SEQUENCE(5,5,100,10)`
+9. `=SUMIF($A$2:$A$20,"*pro*",$B$2:$B$20)`
+10. `=UNIQUE(B2:B20)`
+11. Slicer (Timeline for dates)
+12. It hasn't been refreshed. Right-click → Refresh, or `Alt+F5`.
+
+---
+
+## 6. Your Personal Mistake Checklist (fix these habits)
+
+- [ ] Lock ranges with `$` before filling down (Sheets 5, 6, 7, 15)
+- [ ] End every nested IF with an "else" (Sheet1)
+- [ ] Use the correct row in each formula (Sheet1 `J5`)
+- [ ] Keep text out of numeric columns (Sheet1 column D)
+- [ ] `FREQUENCY(data, bins)`: data first (Sheet2)
+- [ ] Use the drop-down cell in the formula instead of a fixed cell (Sheets 3, 7)
+- [ ] Same `type` in PMT, IPMT, PPMT (Sheet8)
+- [ ] Same-size ranges across a group of COUNTIFs (Sheet9)
+- [ ] Use real dates, not `10.10.2026` text (Sheets 10, 12)
+- [ ] Refresh pivots before reading numbers (Sheets 10, 11)
+- [ ] Subtract 1 for the header in `OFFSET`/`COUNTA` (Sheet11)
+- [ ] Clean data with `TRIM` and spell-check before `UNIQUE`, pivots, or filters
+- [ ] Save as `.xlsm` if you use VBA functions (Sheets 16, 17)
+
+---
+
+## 7. Last 10-Minute Revision
+
+1. Re-read **Section 0** (Golden Rules) and **Section 3** (Cheat Sheet).
+2. Cover the formulas in Section 2 and rebuild three of them from memory: `SUMIFS` grid, `VLOOKUP` + drop-down, `PMT`.
+3. Do the **Mock Exam** with a stopwatch (aim for 2 minutes per question).
+4. Practise one pivot table and one conditional formatting rule from scratch.
+
+Good luck!
